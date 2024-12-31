@@ -36,16 +36,12 @@ public:
 	char symbol;
 	int freq;
 	CSNode* pnext;
-	//CSNode* pright;
-	//CSNode* pleft;
 	CTNode* pdown;
 	CSNode()
 	{
 		freq = 0;
 		symbol = NULL;
 		pnext = NULL;
-		//pright = NULL;
-		//pleft = NULL;
 		pdown = NULL;
 	}
 };
@@ -130,6 +126,30 @@ void cheatToList(CTNode* ptrav, table frq[256])
 	cheatToList(ptrav->pright, frq);
 	cheatToList(ptrav->pleft, frq);
 }
+int check(table frq[256], table* codeCheck,int & pos )
+{
+	int ct = 0;
+	for (int i = 0; frq[i].symbol != NULL; i++)
+	{
+		ct = 0;
+		if (frq[i].code.length() == codeCheck->code.length())
+		{
+			for (int  k = 0; k < codeCheck->code.length(); k++)
+			{
+				if (frq[i].code[k] == codeCheck->code[k])
+				{
+					ct++;
+				}
+			}
+			if (ct == codeCheck->code.length())
+			{
+				pos = i;
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
 void main()
 {
 	ifstream file;
@@ -142,6 +162,7 @@ void main()
 	table frq[256];
 	string code;
 	string compresion;
+	string s;
 	char biteControl = 0;
 	char x = 1;
 	file.open("test.txt");
@@ -241,47 +262,70 @@ void main()
 			bitShift--;
 		}
 	}
-	cout << compresion;
+	int lastbite = 7 - bitShift;
+	if (bitShift > -1)
+	{
+		compresion += biteControl;
+	}
+	cout <<"compresed text: "<<endl << compresion << endl;
+	cout << "--------------------" << endl;
 	// decode phase
 	bitShift = 7;
-	biteControl = 0;
-	char compare;
-	char compare2;
-	int flag = 0;
-	for (int i = 0; i < text.length(); i++)
+	int posTable=0;
+	table* codeCheck;
+	string decode;
+	codeCheck = new table;
+	int len = compresion.length();
+	for ( i = 0; i < (len -1);)
 	{
 		if (bitShift == -1)
 		{
+			i++;
 			bitShift = 7;
-			biteControl = 0;
 		}
-		compare = biteControl;
-		biteControl &= x << bitShift;
-		if (biteControl == compare) // if true then the bite = 0
+		if (i >= len - 1)
+			break;
+		biteControl = compresion[i];
+		biteControl &= (x << bitShift);
+		bitShift--;
+		if (biteControl == 0)
 		{
-			for (int j=0;j<frq[j].symbol!=NULL;j++)
-			{
-				if (frq[j].code[0] == '0')
-				{
-					for (int k = 1; k < frq[j].code.length(); k++)
-					{
-						// write a code to check rest of the bites
-					}
-				}
-			}
+			codeCheck->code += "0";
 		}
-		else  // the bite = 1
+		else
 		{
-			for (int j = 0; j < frq[j].symbol != NULL; j++)
-			{
-				if (frq[j].code[0] == '1')
-				{
-					for (int k = 1; k < frq[j].code.length(); k++)
-					{
-						// write a code to check rest of the bites
-					}
-				}
-			}
+			codeCheck->code += "1";
+		}
+		if (check(frq, codeCheck, posTable) == 1)
+		{
+			decode += frq[posTable].symbol;
+			delete codeCheck;
+			codeCheck = new table;
 		}
 	}
+	for (int k = 0; k < lastbite; k++)
+	{
+		if (bitShift == -1)
+		{
+			i++;
+			bitShift = 7;
+		}
+		biteControl = compresion[i];
+		biteControl &= (x << bitShift--);
+		if (biteControl == 0)
+		{
+			codeCheck->code += "0";
+		}
+		else
+		{
+			codeCheck->code += "1";
+		}
+		if (check(frq, codeCheck, posTable) == 1)
+		{
+			decode += frq[posTable].symbol;
+			delete codeCheck;
+			codeCheck = new table;
+		}
+	}
+	cout << "decoded text: " << endl << decode << endl;
 }
